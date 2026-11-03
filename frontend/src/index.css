@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+}
+
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: #f9fafb;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Peningkatan halus global */
+::selection {
+  background-color: #c7d2fe; /* indigo-200 */
+  color: #312e81; /* indigo-900 */
+}
+
+:focus-visible {
+  outline: 2px solid #6366f1; /* indigo-500 */
+  outline-offset: 2px;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Beri ruang agar jangkar (anchor) tidak tertutup navbar sticky */
+  scroll-padding-top: 5.5rem;
+}
+
+@keyframes topbar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(150%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-topbar {
+  animation: topbar 1s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #818cf8 #e0e7ff;
+}
+.table-scroll::-webkit-scrollbar {
+  height: 12px;
+  width: 12px;
+}
+.table-scroll::-webkit-scrollbar-track {
+  background: #e0e7ff;
+  border-radius: 9999px;
+}
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #818cf8;
+  border-radius: 9999px;
+  border: 3px solid #e0e7ff;
+}
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
