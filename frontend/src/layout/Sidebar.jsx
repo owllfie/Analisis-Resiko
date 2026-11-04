@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import {
-  IconDashboard, IconProjects, IconRisk, IconPriority, IconActivity, IconUsers, IconClose, IconLogout, IconUser, IconTrash, IconBook, IconShield,
+  IconDashboard, IconProjects, IconRisk, IconPriority, IconActivity, IconUsers, IconClose, IconLogout, IconUser, IconTrash, IconShield,
   Avatar, BrandMark,
 } from '../lib/ui.jsx';
 import { ROLE_BADGE, ROLE_LABEL } from '../lib/format.js';
@@ -30,7 +30,6 @@ const NAV = [
   },
   {
     group: 'Bantuan',
-    items: [{ to: '/panduan', label: 'Panduan & AI', icon: IconBook }],
   },
 ];
 

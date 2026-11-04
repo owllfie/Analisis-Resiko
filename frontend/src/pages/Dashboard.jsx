@@ -194,8 +194,9 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="pt-4 border-t border-gray-100 space-y-2.5">
+              {false && <>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-gray-500">Model risiko</span>
+                <span className="text-sm text-gray-500">Model risiko (client-side)</span>
                 <span className="text-sm font-semibold text-gray-800">{model?.model_version || 'rules-v1'}</span>
               </div>
               {accuracy && (
@@ -203,7 +204,7 @@ export default function Dashboard() {
                   <span className="text-sm text-gray-500">Akurasi model</span>
                   <span className="text-sm font-semibold text-gray-800">{accuracy}%</span>
                 </div>
-              )}
+              )} </>}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-gray-500">Analisis terakhir</span>
                 <span className="text-sm font-semibold text-gray-800">{d.last_analysis_at ? formatDateTime(d.last_analysis_at) : 'Belum ada'}</span>

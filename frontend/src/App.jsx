@@ -14,7 +14,6 @@ import Users from './pages/Users.jsx';
 import AccessMatrix from './pages/AccessMatrix.jsx';
 import Trash from './pages/Trash.jsx';
 import History from './pages/History.jsx';
-import Guide from './pages/Guide.jsx';
 
 export default function App() {
   const { user } = useAuth();
@@ -68,7 +67,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/panduan" element={<Guide />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

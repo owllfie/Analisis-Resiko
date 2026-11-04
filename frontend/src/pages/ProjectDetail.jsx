@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useApiGet } from '../api/useApi.js';
+import { analyzeProjectRisk } from '../ml/analyzeRisk.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   Card, CardHeader, Spinner, ErrorBanner, EmptyState, Badge, ProgressBar, Modal, Field, inputCls, btnPrimary,
@@ -372,8 +373,13 @@ export default function ProjectDetail() {
     setAnalyzing(true);
     setAnalyzeMsg('');
     try {
-      const res = await api.post(`/projects/${id}/analyze-risk`);
-      setAnalyzeMsg(`Analisis selesai untuk ${res.data.length} tugas (${res.model_version}).`);
+      const res = await analyzeProjectRisk(id);
+      const mode = res.data.length === 0
+        ? 'tidak ada tugas untuk dianalisis'
+        : res.fallback
+          ? `fallback aturan ${res.model_version}`
+          : `model ${res.model_version}, dihitung di browser`;
+      setAnalyzeMsg(`Analisis selesai untuk ${res.data.length} tugas (${mode}).`);
       reload();
     } catch (err) {
       setAnalyzeMsg(`Gagal: ${err.message}`);

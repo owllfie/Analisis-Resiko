@@ -17,7 +17,6 @@ function pageMeta(pathname) {
   if (pathname.startsWith('/access')) return { title: 'Matriks Hak Akses', subtitle: 'Perbandingan izin tiap peran terhadap fitur aplikasi' };
   if (pathname.startsWith('/trash')) return { title: 'Sampah', subtitle: 'Pulihkan atau hapus permanen data yang dihapus' };
   if (pathname.startsWith('/history')) return { title: 'Histori Update', subtitle: 'Riwayat perubahan progres tugas dari waktu ke waktu' };
-  if (pathname.startsWith('/panduan')) return { title: 'Panduan & AI', subtitle: 'Cara menggunakan aplikasi dan cara AI menghitung risiko' };
   return { title: 'SIMProyek', subtitle: 'Sistem Informasi Manajemen Proyek' };
 }
 

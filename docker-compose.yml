@@ -25,19 +25,6 @@ services:
       retries: 20
       start_period: 30s
 
-  ml:
-    build: ./ml
-    container_name: simproyek_ml
-    restart: unless-stopped
-    ports:
-      - "${ML_PORT:-8001}:8000"
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 10s
-
   backend:
     build: ./backend
     container_name: simproyek_backend
@@ -53,8 +40,6 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:-app}
       DB_NAME: ${MYSQL_DATABASE:-project_ai}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-      # URL layanan Machine Learning untuk analisis risiko (v2).
-      ML_SERVICE_URL: ${ML_SERVICE_URL:-http://ml:8000}
       # Data demo nonaktif secara bawaan; aplikasi dipakai dengan data nyata.
       SEED_DEMO: ${SEED_DEMO:-false}
       # Akun admin pertama dibuat otomatis bila belum ada pengguna.
@@ -67,8 +52,6 @@ services:
       - "${BACKEND_PORT:-3000}:3000"
     depends_on:
       db:
-        condition: service_healthy
-      ml:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bun -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]

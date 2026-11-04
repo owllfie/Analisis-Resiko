@@ -1,0 +1,19 @@
+# Folder training Python tidak boleh masuk ke image hosting.
+ml/
+**/*.py
+**/*.pkl
+**/*.csv
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/venv/
+
+# Artefak pengembangan
+.git/
+**/node_modules/
+**/dist/
+**/coverage/
+**/*.log
+.env
+.env.*
+!.env.example

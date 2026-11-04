@@ -1,7 +1,7 @@
 """Definisi fitur bersama antara pelatihan dan inferensi.
 
-Urutan fitur di sini WAJIB sama antara train_model.py dan app.py agar vektor
-fitur konsisten.
+Urutan fitur di sini WAJIB sama antara pelatihan/ekspor (Python) dan runtime
+browser (`frontend/src/ml/riskModel.js`) agar vektor fitur konsisten.
 """
 
 FEATURE_NAMES = [

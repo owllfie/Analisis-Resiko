@@ -7,18 +7,20 @@ dan seluruh layanan dijalankan lewat Docker Compose.
 ## Arsitektur
 
 ```
-frontend (React + Vite + Nginx, host port 8090)
-        │  /api  (di-proxy Nginx)
-        ▼
-backend (Bun + Express, host port 3000)
-        │                         │
-        ▼                         ▼
-db (MySQL 8,               ml (FastAPI + scikit-learn,
-    host 3307 -> 3306)         host 8001 -> 8000)
+Browser
+  ├─ memuat model statis /models/risk-model.json
+  ├─ menjalankan inferensi ML di Web Worker (client-side)
+  └─ /api  ──►  backend (Bun + Express, host port 3000)  ──►  db (MySQL 8, host 3307)
+                    │
+                    └─ feature engineering ringan + simpan hasil + fallback aturan
 ```
 
-> Port host dapat diubah lewat `.env` (`FRONTEND_PORT`, `DB_PORT`, `ML_PORT`). Nilai
-> default 8090, 3307, dan 8001 dipilih agar tidak bentrok dengan layanan umum.
+> Tidak ada container/layanan ML terpisah. Model Machine Learning diunduh sebagai
+> aset statis dan dijalankan di browser, sehingga VPS tidak menanggung beban
+> inferensi maupun runtime Python.
+>
+> Port host dapat diubah lewat `.env` (`FRONTEND_PORT`, `DB_PORT`). Nilai default
+> 8090 dan 3307 dipilih agar tidak bentrok dengan layanan umum.
 
 - **frontend/** — React + Vite + Tailwind CSS v4 + Recharts, dibundel dengan Bun, REST melalui `/api`.
   Antarmuka diberi tema (font Inter, aksen indigo, kartu lembut) dengan sidebar, navbar (jam langsung),
@@ -29,9 +31,9 @@ db (MySQL 8,               ml (FastAPI + scikit-learn,
   yang dapat dimatikan; interval bawaan 15 detik.
 - **backend/** — Express dijalankan dengan Bun, autentikasi JWT (cookie httpOnly), validasi, otorisasi per peran.
   Driver MySQL memakai `mysql2` (kolom DATE dikembalikan sebagai `YYYY-MM-DD`, DECIMAL sebagai angka).
-- **ml/** — layanan Machine Learning: FastAPI + scikit-learn. Model dilatih
-  saat build image (`python train_model.py`) dan disajikan lewat HTTP. Kandidat model
-  dibandingkan lewat validasi silang (5-fold) dan yang terbaik dipilih otomatis.
+- **ml/** — **hanya untuk training offline**, tidak di-deploy. Model ringan (MLP)
+  dilatih/diekspor ke `frontend/public/models/risk-model.json` dan metadata ke
+  `backend/src/services/modelInfo.json`. Lihat `ml/README.md`.
 - **db** — MySQL 8 (InnoDB, utf8mb4, kolasi case-insensitive). Skema dibuat otomatis via
   migrasi saat backend start; data disimpan pada volume Docker `mysqldata`.
 
@@ -48,7 +50,6 @@ db (MySQL 8,               ml (FastAPI + scikit-learn,
 3. Buka aplikasi:
    - Frontend: http://localhost:8090
    - API health: http://localhost:3000/api/health
-   - ML health: http://localhost:8001/health
 
 Untuk menghentikan: `docker compose down`.
 Untuk menghapus data database juga: `docker compose down -v`.
@@ -76,18 +77,19 @@ dibuat secara bawaan.
 
 Proyek ini memakai **Bun** sebagai runtime dan package manager (backend & frontend).
 
-Jalankan database (dan opsional layanan ML):
+Jalankan database:
 ```bash
-docker compose up db ml
+docker compose up db
 ```
 Lalu di `backend/`: `bun install && bun run dev` (butuh MySQL di `localhost:3306`
-atau atur variabel `DB_*`; arahkan `ML_SERVICE_URL` ke layanan ML). Di `frontend/`:
-`bun install && bun run dev` (proxy `/api` ke `http://localhost:3000`).
+atau atur variabel `DB_*`). Di `frontend/`: `bun install && bun run dev`
+(proxy `/api` ke `http://localhost:3000`).
 
-Layanan ML dapat dijalankan tanpa Docker (butuh Python 3.12):
+Model ML tidak perlu dijalankan sebagai server. Untuk memperbarui artefak model
+(butuh Python 3.12 di mesin pengembang, **bukan di VPS**):
 ```bash
-cd ml && pip install -r requirements.txt && python train_model.py
-uvicorn app:app --host 0.0.0.0 --port 8000
+cd ml && pip install -r requirements.txt && python export_client_model.py
+cd ../frontend && bun run test:model
 ```
 
 ## Perintah penting
@@ -99,8 +101,8 @@ uvicorn app:app --host 0.0.0.0 --port 8000
 | `bun run seed` | backend | Buat data demo |
 | `bun test` | backend | Unit test aturan risiko & prioritas |
 | `bun run build` | frontend | Build produksi |
-| `python train_model.py` | ml | Latih ulang model risiko (menghasilkan `risk_model.pkl`) |
-| `uvicorn app:app --port 8000` | ml | Jalankan layanan prediksi risiko |
+| `python export_client_model.py` | ml | Latih & ekspor model client-side (offline) |
+| `bun run test:model` | frontend | Uji parity inferensi JS vs Python |
 
 > Unit test backend membutuhkan dependensi (mis. `pg`). Jalankan di dalam image:
 > `docker run --rm -v "$PWD/backend/tests:/app/tests" analisisresiko-backend bun test`.
@@ -122,7 +124,7 @@ POST   /api/auth/logout
 GET    /api/auth/me
 PATCH  /api/auth/profile          (perbarui nama dan/atau password sendiri)
 
-GET    /api/risk-model            (info model AI/ML yang aktif; fallback bila ML mati)
+GET    /api/risk-model            (metadata model client-side + versi fallback aturan)
 
 GET    /api/dashboard
 
@@ -138,7 +140,8 @@ PATCH  /api/projects/:id         (admin/manager)
 DELETE /api/projects/:id         (admin/manager; ?archive=true untuk mengarsipkan)
 GET    /api/projects/:id/tasks
 POST   /api/projects/:id/tasks   (admin/manager)
-POST   /api/projects/:id/analyze-risk
+GET    /api/projects/:id/risk-features      (vektor fitur untuk inferensi di browser)
+POST   /api/projects/:id/analyze-risk      (menerima hasil prediksi client; tanpa body = rules-v1)
 GET    /api/projects/:id/risk-assessments
 GET    /api/projects/:id/task-priorities
 
@@ -152,23 +155,27 @@ DELETE /api/tasks/:id/dependencies/:dependsOnId
 GET    /api/activity
 ```
 
-## AI: analisis risiko berbasis Machine Learning (v3)
+## AI: analisis risiko berbasis Machine Learning (client-side)
 
-Analisis risiko tugas kini dihitung oleh **model Machine Learning** yang dilatih dengan
-**scikit-learn**, disajikan sebagai layanan terpisah (`ml/`).
-`model_version = ml-ens-v3`.
+Analisis risiko tugas dihitung oleh **model Machine Learning yang berjalan di browser**
+(Web Worker). `model_version = ml-mlp-v4`. Tidak ada layanan ML/Python terpisah di VPS;
+backend hanya menyiapkan fitur dari database dan menyimpan hasilnya.
 
-Mesin yang dipakai dipilih otomatis lewat validasi silang (5-fold StratifiedKFold, dipilih
-berdasarkan macro-F1). Pada dataset simulasi bawaan, model terbaik adalah **soft-voting
-ensemble** dari `HistGradientBoostingClassifier` + `ExtraTreesClassifier`, dengan
-**akurasi uji ≈ 0.909** dan **macro-F1 ≈ 0.905**.
+Model adalah MLP kecil (`StandardScaler → Dense(ReLU) → Dense(ReLU) → Softmax`) yang
+dilatih offline dengan scikit-learn lalu diekspor ke JSON. Pada dataset simulasi 30.000
+baris, akurasi uji ≈ **0,912** dan macro-F1 ≈ **0,909**. Probabilitas dikalibrasi dengan
+*temperature scaling* agar penjelasan faktor kontribusi tetap informatif. Detail akurasi
+selalu tersedia di `GET /api/risk-model` dan panel “Model AI” pada halaman Panduan.
 
 ### Alur
 
-1. Backend membangun vektor fitur untuk tiap tugas dari database dan konteks proyek.
-2. Backend memanggil `POST /predict/batch` di layanan ML (`ML_SERVICE_URL`).
-3. Hasil (kelas risiko, skor, keyakinan, probabilitas, faktor kontribusi) disimpan ke
-   `risk_assessments` lalu dipakai untuk prioritas dan tampilan.
+1. Backend membangun vektor fitur untuk tiap tugas dari database dan konteks proyek
+   (`GET /api/projects/:id/risk-features`) — query SQL ringan, tanpa inferensi.
+2. Browser memuat `frontend/public/models/risk-model.json` lalu menjalankan model di
+   Web Worker.
+3. Hasil (kelas risiko, skor, keyakinan, probabilitas, faktor kontribusi) dikirim kembali
+   ke `POST /api/projects/:id/analyze-risk` untuk divalidasi dan disimpan ke
+   `risk_assessments`, lalu dipakai untuk prioritas dan tampilan.
 
 ### Fitur model (12)
 
@@ -190,28 +197,33 @@ ensemble** dari `HistGradientBoostingClassifier` + `ExtraTreesClassifier`, denga
 `predicted_delay_days` tetap dihitung dengan aritmetika sederhana (sisa pekerjaan vs hari
 tersisa) dan bukan keluaran model.
 
-### Pelatihan & artefak
+### Pelatihan & artefak (offline, tidak di-deploy)
 
-`ml/train_model.py` menghasilkan dataset simulasi (dapat diganti data historis nyata), lalu
-membandingkan beberapa kandidat model dengan validasi silang dan memilih yang terbaik
-berdasarkan macro-F1. Hasilnya ditulis ke `risk_model.pkl` + `model_meta.json` (daftar
-fitur, feature importance, statistik ablasi, akurasi). Model dilatih otomatis saat build
-image ML. Pada dataset simulasi (30.000 baris) akurasi uji ≈ 0.909.
+`ml/export_client_model.py` memuat dataset historis bila tersedia (atau dataset simulasi),
+melatih MLP, mengevaluasi, lalu menulis:
+
+- `frontend/public/models/risk-model.json` — bobot + metadata (ukurannya kecil);
+- `backend/src/services/modelInfo.json` — metadata untuk `GET /api/risk-model`;
+- `ml/model-golden.json` — contoh untuk uji parity Python vs JavaScript.
+
+Folder `ml/` **tidak ikut dibangun ke image hosting**. Artefak `.pkl`, CSV, dan file
+Python dikecualikan lewat `.gitignore` + `.dockerignore`.
 
 Ingin memakai data nyata? Letakkan `ml/historical_tasks.csv` (12 kolom fitur + kolom
-`risk_level`) sebelum build; skrip akan otomatis memakainya dan melaporkannya di metadata.
+`risk_level`), lalu jalankan exporter. Skrip akan otomatis memakainya dan melaporkannya
+di metadata.
 
-> **Catatan kejujuran:** dataset pelatihan saat ini **simulasi** untuk demonstrasi.
+> **Catatan kejujuran:** dataset pelatihan bawaan masih **simulasi** untuk demonstrasi.
 > Untuk produksi, ganti dengan data historis nyata (mis. apakah tugas terlambat, selisih
 > durasi aktual vs estimasi) dan gunakan pemisahan data kronologis.
 
 ### Fallback ke aturan (rules-v1)
 
-Bila layanan ML tidak tersedia (mis. container mati), backend otomatis memakai
-**indikator berbasis aturan** (`model_version = rules-v1`) yang transparan: kedekatan
-tenggat, keterlambatan progres, status `blocked`, prasyarat belum selesai, dan
-kepentingan tugas. Hasil tetap tersimpan dan akan memakai model AI lagi saat layanan
-pulih. `GET /api/risk-model` menandai engine aktif (`ml` atau `rules`).
+Bila model client gagal dimuat (mis. aset model tidak tersedia atau browser tidak
+mendukung Web Worker), backend otomatis memakai **indikator berbasis aturan**
+(`model_version = rules-v1`): kedekatan tenggat, keterlambatan progres, status `blocked`,
+prasyarat belum selesai, dan kepentingan tugas. Hasil tetap tersimpan dan analisis
+berikutnya kembali memakai model ML saat model berhasil dijalankan.
 
 **Prioritas pekerjaan** tetap dihitung backend dengan rumus berbobot (lihat
 `backend/src/services/priority.js`): urgensi 0.4, kepentingan 0.2, risiko 0.3, kapasitas
@@ -232,8 +244,11 @@ Sudah berfungsi:
 - Autentikasi (login/logout, cookie httpOnly), **registrasi mandiri**, dan otorisasi per peran.
 - CRUD proyek & tugas, ketergantungan (dengan pencegahan siklus), riwayat progres.
 - Dashboard aktual dari database (progres, distribusi status, tenggat dekat, risiko tinggi).
-- **Analisis risiko berbasis Machine Learning** dengan keyakinan, probabilitas,
-  faktor kontribusi, dan rekomendasi; **fallback otomatis** ke aturan bila layanan ML mati.
+- **Analisis risiko berbasis Machine Learning client-side** (berjalan di Web Worker) dengan
+  keyakinan, probabilitas, faktor kontribusi, dan rekomendasi; **fallback otomatis** ke aturan
+  bila model client gagal dimuat.
+- **Tanpa runtime ML/Python di VPS** — model hanya aset statis, sehingga hemat RAM/CPU dan
+  build image lebih cepat.
 - Field **anggaran proyek** yang dipakai sebagai fitur model.
 - Urutan prioritas beserta alasan dan komponen skor.
 - Riwayat aktivitas.

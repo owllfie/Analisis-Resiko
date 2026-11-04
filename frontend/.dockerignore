@@ -1,3 +1,18 @@
-node_modules
-dist
-.git
+node_modules/
+dist/
+coverage/
+*.log
+.git/
+.env
+.env.*
+!.env.example
+
+# Jangan bawa artefak training / Python ke image frontend.
+# CATATAN: public/models/risk-model.json HARUS tetap ikut karena itu artefak
+# model yang dijalankan browser — bukan data pelatihan.
+**/*.py
+**/*.pkl
+**/*.csv
+**/__pycache__/
+**/*.pyc
+ml/

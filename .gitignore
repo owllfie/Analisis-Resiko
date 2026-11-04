@@ -5,3 +5,17 @@ dist/
 .DS_Store
 pgdata/
 coverage/
+
+# Artefak training Python — jangan di-commit / jangan ikut deploy.
+ml/*.pkl
+ml/model_meta.json
+ml/historical_tasks.csv
+ml/__pycache__/
+ml/.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Artefak model client-side yang memang HARUS ikut deploy:
+# frontend/public/models/risk-model.json
+# backend/src/services/modelInfo.json

@@ -61,12 +61,12 @@ export default function Priorities() {
         </div>
       </Card>
 
-      <Notice tone="info">
+      {false && <Notice tone="info">
         <span className="font-semibold">Bobot prioritas:</span>{' '}
         Urgensi {Math.round((weights.urgency || 0) * 100)}% · Kepentingan {Math.round((weights.importance || 0) * 100)}% ·
         Risiko {Math.round((weights.risk || 0) * 100)}% · Kapasitas {Math.round((weights.capacity || 0) * 100)}%.
         Tugas yang prasyaratnya belum selesai diturunkan prioritasnya.
-      </Notice>
+      </Notice>}
 
       {!projectId ? (
         <Card><EmptyState title="Belum ada proyek dipilih" message="Pilih salah satu proyek di atas untuk melihat prioritas." /></Card>

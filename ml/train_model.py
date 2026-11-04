@@ -1,4 +1,8 @@
-"""Pelatihan model Machine Learning untuk analisis risiko proyek (v3).
+"""Pelatihan model Machine Learning untuk analisis risiko proyek (skrip legacy).
+
+CATATAN: produksi memakai `export_client_model.py` (MLP kecil untuk browser).
+Skrip ini dipertahankan sebagai eksperimen/benchmark offline dan sumber fungsi
+pembuat dataset.
 
 Skrip ini:
 1. Menyiapkan dataset — memuat `historical_tasks.csv` bila ada (data nyata),
@@ -418,7 +422,7 @@ def main() -> None:
     print("confusion matrix:", confusion_matrix(y_test, y_pred, labels=CLASS_LABELS).tolist())
 
     # Statistik normalisasi untuk menjelaskan kontribusi fitur per prediksi
-    # (dipakai app.py pada metode ablasi).
+    # (dipakai metode ablasi; versi produksi menghitungnya di browser).
     mean = X_train.mean(axis=0)
     std = X_train.std(axis=0)
     std[std == 0] = 1.0

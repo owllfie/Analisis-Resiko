@@ -8,7 +8,7 @@ import { badRequest, forbidden, notFound } from '../utils/errors.js';
 import { isProjectOwner } from '../utils/access.js';
 import { logActivity } from '../utils/activity.js';
 import { recordHistory } from '../utils/history.js';
-import { analyzeProjectRisk } from '../services/risk.js';
+import { analyzeProjectRisk, getProjectRiskFeatures } from '../services/risk.js';
 import { getProjectTaskPriorities } from '../services/priority.js';
 
 const router = Router();
@@ -313,6 +313,18 @@ router.post(
 
 // ---- Analisis risiko & prioritas ----
 
+// Vektor fitur untuk inferensi di browser (tanpa kalkulasi ML di server).
+router.get(
+  '/:id/risk-features',
+  asyncHandler(async (req, res) => {
+    const project = await getProject(parseInt(req.params.id, 10));
+    if (!project) throw notFound('Proyek tidak ditemukan');
+    await assertCanViewProject(req.user, project);
+    const data = await getProjectRiskFeatures(project.id);
+    res.json({ data });
+  }),
+);
+
 router.post(
   '/:id/analyze-risk',
   asyncHandler(async (req, res) => {
@@ -322,7 +334,8 @@ router.post(
     if (!(await can(req.user, 'risk.analyze'))) {
       throw forbidden('Anda tidak memiliki izin memicu analisis risiko');
     }
-    const results = await analyzeProjectRisk(project.id, req.user.id);
+    // Browser mengirim hasil inferensi model; bila tidak ada, backend memakai rules-v1.
+    const results = await analyzeProjectRisk(project.id, req.user.id, req.body?.predictions);
     res.json({ data: results, model_version: results[0]?.model_version || 'rules-v1' });
   }),
 );

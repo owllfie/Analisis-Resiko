@@ -8,16 +8,19 @@ tugas, progres, serta menganalisis risiko dan menentukan prioritas pekerjaan.
 
 ## 1. Gambaran Singkat
 
-Aplikasi terdiri dari empat layanan yang dijalankan dengan Docker Compose:
+Aplikasi terdiri dari tiga layanan yang dijalankan dengan Docker Compose:
 
 | Layanan | Teknologi | Alamat default | Keterangan |
 |---------|-----------|----------------|------------|
-| **frontend** | React + Vite + Tailwind + Recharts (Nginx) | http://localhost:8090 | Antarmuka web |
+| **frontend** | React + Vite + Tailwind + Recharts (Nginx) | http://localhost:8090 | Antarmuka web + model ML client-side |
 | **backend** | Bun + Express | http://localhost:3000/api | REST API, autentikasi, otorisasi |
-| **ml** | FastAPI + scikit-learn | http://localhost:8001 | Layanan prediksi risiko (AI) |
 | **db** | MySQL 8 | localhost:3307 | Basis data |
 
-Port bisa diubah lewat `.env` (`FRONTEND_PORT`, `ML_PORT`, `DB_PORT`).
+Model Machine Learning **tidak** dijalankan sebagai layanan terpisah. Model diunduh
+sebagai aset statis dan dieksekusi di browser (Web Worker), sehingga VPS tidak perlu
+Python/scikit-learn.
+
+Port bisa diubah lewat `.env` (`FRONTEND_PORT`, `DB_PORT`).
 
 ---
 
@@ -36,7 +39,6 @@ docker compose up --build
 Buka **http://localhost:8090**.
 
 - Health backend: http://localhost:3000/api/health
-- Health layanan ML: http://localhost:8001/health
 
 Untuk menghentikan: `docker compose down` (tambah `-v` bila ingin menghapus database juga).
 
@@ -129,7 +131,8 @@ Menampilkan informasi proyek, daftar **tugas**, dan **ketergantungan antar-tugas
 ### 4.5 Analisis Risiko
 
 1. Pilih proyek pada dropdown.
-2. Klik **Jalankan Analisis** (admin/manager). Backend mengirim data tugas ke layanan ML.
+2. Klik **Jalankan Analisis** (admin/manager). Browser mengambil vektor fitur dari backend lalu
+   menjalankan model ML secara lokal.
 3. Lihat hasilnya:
    - **Stat cards**: total tugas dianalisis, jumlah risiko tinggi/sedang, skor tertinggi.
    - **Grafik komposisi** risiko (rendah/sedang/tinggi).
@@ -137,8 +140,8 @@ Menampilkan informasi proyek, daftar **tugas**, dan **ketergantungan antar-tugas
      **perkiraan keterlambatan**.
    - Klik satu baris untuk **membentangkan** detail: **faktor penyebab**, **probabilitas tiap
      tingkat** (bar), dan **rekomendasi** tindakan.
-   - Banner di atas menandai mesin yang dipakai: **ML** (`ml-ens-v3`) atau **fallback aturan**
-     (`rules-v1`) bila layanan ML mati.
+   - Banner di atas menandai mode yang dipakai: **ML client-side** (`ml-mlp-v4`) atau
+     **fallback aturan** (`rules-v1`) bila model browser gagal dimuat.
 
 ### 4.6 Prioritas Pekerjaan
 
@@ -184,14 +187,16 @@ navbar dapat dinyalakan/dimatikan, beserta waktu pembaruan terakhir.
 
 ## 5. Cara Kerja AI/ML
 
-Analisis risiko tugas dihitung oleh **model Machine Learning** yang dilatih dengan
-**scikit-learn**, disajikan sebagai layanan HTTP terpisah di `ml/`.
-Versi model: **`ml-ens-v3`** — *soft-voting ensemble* dari `HistGradientBoostingClassifier`
-+ `ExtraTreesClassifier`, dipilih otomatis lewat validasi silang (5-fold) berdasarkan
-macro-F1. Akurasi uji ≈ 0.909 pada dataset simulasi (30.000 baris).
+Analisis risiko tugas dihitung oleh **model Machine Learning yang berjalan di browser**
+(Web Worker). Versi model: **`ml-mlp-v4`** — MLP kecil
+(`StandardScaler → Dense(ReLU) → Dense(ReLU) → Softmax`) yang dilatih offline dengan
+scikit-learn lalu diekspor ke JSON. Pada dataset simulasi 30.000 baris, akurasi uji
+≈ **0,912** dan macro-F1 ≈ **0,909**. Probabilitas dikalibrasi dengan *temperature scaling*
+agar penjelasan faktor kontribusi tetap informatif. Detail akurasi dapat dilihat lewat
+`GET /api/risk-model` dan panel **Model AI** di halaman **Panduan & AI**.
 
-> Info mesin yang sedang aktif dapat dilihat lewat `GET /api/risk-model` (versi, algoritma,
-> akurasi, dan feature importance) dan ditampilkan langsung di halaman **Panduan & AI**.
+> Yang berjalan di VPS hanya backend/database. Tidak ada Python, scikit-learn, `.pkl`,
+> atau data pelatihan yang ikut ke hosting.
 
 ### 5.1 Arsitektur AI
 
@@ -202,22 +207,30 @@ Pengguna klik "Jalankan Analisis"
 backend (Bun/Express)
   ├─ baca tugas + konteks proyek dari MySQL
   ├─ bangun vektor 12 fitur untuk tiap tugas
-  ├─ POST /predict/batch  ──────────────►  ml (FastAPI + scikit-learn)
-  │                                            • risk_model.pkl
-  │  ◄────────  hasil prediksi ──────────────  • model_meta.json
-  ├─ simpan hasil ke tabel risk_assessments
+  └─ kirim fitur ke browser (GET /risk-features)
+        │
+        ▼
+browser
+  ├─ muat models/risk-model.json (aset statis)
+  ├─ jalankan MLP + ablasi di Web Worker
+  └─ POST hasil prediksi ke backend
+        │
+        ▼
+backend
+  ├─ validasi hasil, simpan ke risk_assessments
   └─ kirim ke frontend untuk ditampilkan
 ```
 
-Jika layanan ML **tidak tersedia**, backend otomatis memakai **fallback berbasis aturan**
-(`rules-v1`) sehingga aplikasi tetap berjalan.
+Jika model client **gagal dimuat/dijalankan**, backend otomatis memakai **fallback berbasis
+aturan** (`rules-v1`) sehingga aplikasi tetap berjalan.
 
 ### 5.2 Alur Prediksi (ringkas)
 
 1. Backend menyusun **vektor fitur** tiap tugas dari database + konteks proyek.
-2. Backend memanggil `POST /predict/batch` ke `ML_SERVICE_URL` (default `http://ml:8000`).
-3. Layanan ML mengembalikan kelas risiko, skor, keyakinan, probabilitas, dan faktor kontribusi.
-4. Hasil disimpan ke `risk_assessments` dan dipakai untuk halaman Analisis Risiko & Prioritas.
+2. Browser memuat model JSON statis dan menjalankan inferensi di Web Worker.
+3. Browser mengirim kelas risiko, skor, keyakinan, probabilitas, dan faktor kontribusi.
+4. Backend memvalidasi, menyimpan ke `risk_assessments`, lalu hasil dipakai untuk halaman
+   Analisis Risiko & Prioritas.
 
 ### 5.3 Dua Belas Fitur Model
 
@@ -251,7 +264,7 @@ Jika layanan ML **tidak tersedia**, backend otomatis memakai **fallback berbasis
 
 ### 5.5 Bagaimana Faktor Penyebab Dihitung (Ablasi Fitur)
 
-Model ensemble bersifat "kotak hitam", jadi penjelasannya memakai **ablasi (occlusion)**:
+Model MLP bersifat "kotak hitam", jadi penjelasannya memakai **ablasi (occlusion)**:
 
 1. Untuk satu tugas, hitung **skor dasar** dari nilai fitur aslinya.
 2. Untuk **tiap fitur**, ganti nilai fitur itu dengan **rata-rata data pelatihan**, lalu hitung
@@ -262,34 +275,30 @@ Model ensemble bersifat "kotak hitam", jadi penjelasannya memakai **ablasi (occl
 4. Ambil **6 fitur** dengan kontribusi absolut terbesar sebagai faktor utama, lalu
    terjemahkan menjadi rekomendasi.
 
-### 5.6 Pelatihan & Artefak Model
+### 5.6 Pelatihan & Artefak Model (offline)
 
-`ml/train_model.py` (dijalankan otomatis saat build image ML):
+`ml/export_client_model.py` dijalankan **di mesin pengembang/CI**, bukan di VPS:
 
-- Membuat dataset **simulasi** (30.000 baris) dengan *skor risiko laten* sebagai dasar
-  pelabelan, distribusi fitur realistis, dan interaksi non-linear terkendali.
-- Membandingkan beberapa kandidat model lewat **validasi silang 5-fold StratifiedKFold**
-  (`HistGradientBoostingClassifier`, `RandomForestClassifier`, `ExtraTreesClassifier`,
-  serta *soft-voting ensemble* HGB+ET) dan memilih yang terbaik berdasarkan **macro-F1**.
-- Pemisahan data 80% latih / 20% uji (stratified) untuk evaluasi akhir.
-- Menyimpan `risk_model.pkl` + `model_meta.json` (daftar fitur, feature importance, statistik
-  ablasi, akurasi, laporan klasifikasi, hasil CV tiap kandidat).
-- **Akurasi uji saat ini ≈ 0,909** dengan macro-F1 ≈ 0,905 (pada dataset simulasi).
-- Jika tersedia `ml/historical_tasks.csv` (12 kolom fitur + `risk_level`), skrip otomatis
-  memakai **data historis nyata** alih-alih simulasi.
+- Membuat/memuat dataset (simulasi 30.000 baris, atau `ml/historical_tasks.csv` bila ada).
+- Melatih MLP ringan dan mengevaluasi pada split 80% latih / 20% uji (stratified).
+- Menghitung *permutation importance* untuk metadata.
+- Menulis artefak:
+  - `frontend/public/models/risk-model.json` — bobot + metadata (kecil, untuk browser);
+  - `backend/src/services/modelInfo.json` — metadata untuk `GET /api/risk-model`;
+  - `ml/model-golden.json` — contoh uji parity Python vs JavaScript.
 
-Endpoint layanan ML:
+Verifikasi parity dari folder `frontend/`:
 
+```bash
+bun run test:model
 ```
-GET  /health          → status layanan & versi model
-GET  /model-info      → metadata model (akurasi, feature importance, dataset)
-POST /predict         → prediksi satu item
-POST /predict/batch   → prediksi banyak item sekaligus
-```
+
+> Artefak `.pkl`, CSV, dan file Python tidak ikut di-commit/deploy. Folder `ml/` hanya
+> untuk training offline.
 
 ### 5.7 Fallback ke Aturan (`rules-v1`)
 
-Bila layanan ML tidak tersedia (mis. container mati), backend memakai indikator aturan yang
+Bila model browser gagal dimuat/dijalankan, backend memakai indikator aturan yang
 transparan. Komponen skor:
 
 | Kondisi | Tambahan skor |
@@ -304,8 +313,8 @@ transparan. Komponen skor:
 | Kepentingan tinggi / sedang | +10 / +4 |
 
 Tingkat risiko dari skor: `<35` = rendah, `<65` = sedang, selebihnya tinggi. Tugas `completed`
-selalu dinilai **rendah**. Hasil tetap tersimpan dan otomatis memakai model AI lagi saat
-layanan ML pulih. `GET /api/risk-model` menandai mesin aktif (`ml` atau `rules`).
+selalu dinilai **rendah**. Hasil tetap tersimpan dan analisis berikutnya otomatis memakai
+model ML lagi saat model berhasil dimuat/dijalankan.
 
 ### 5.8 Prioritas Pekerjaan (bukan ML)
 
@@ -347,7 +356,7 @@ Dataset pelatihan saat ini **simulasi** untuk demonstrasi. Untuk produksi:
 
 | Gejala | Kemungkinan penyebab & solusi |
 |--------|-------------------------------|
-| Banner menulis "fallback aturan" | Layanan ML mati. Cek http://localhost:8001/health, lalu `docker compose up -d ml`. |
+| Banner menulis "fallback aturan" | Model client gagal dimuat. Pastikan `frontend/public/models/risk-model.json` ada dan ikut ter-build, lalu hard refresh browser. |
 | Halaman kosong setelah ubah kode frontend | Rebuild: `docker compose up -d --build frontend`, lalu hard refresh browser. |
-| Port bentrok | Ubah `FRONTEND_PORT` / `ML_PORT` / `DB_PORT` di `.env`. |
+| Port bentrok | Ubah `FRONTEND_PORT` / `DB_PORT` di `.env`. |
 | Tidak bisa login akun bootstrap | Pastikan database masih kosong saat pertama start, atau buat pengguna via admin. |

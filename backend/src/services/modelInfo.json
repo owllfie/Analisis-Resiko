@@ -1,0 +1,63 @@
+{
+  "model_version": "ml-mlp-v4",
+  "algorithm": "MLPClassifier(96,48)",
+  "engine": "client",
+  "available": true,
+  "temperature": 1.20191659,
+  "classes": [
+    "high",
+    "low",
+    "medium"
+  ],
+  "feature_names": [
+    "duration_days",
+    "progress",
+    "days_remaining",
+    "importance",
+    "dependency_count",
+    "unfinished_dependency_count",
+    "assignee_workload",
+    "team_size",
+    "project_complexity",
+    "manager_experience",
+    "historical_risk_score",
+    "budget_per_task"
+  ],
+  "feature_labels": {
+    "duration_days": "Durasi rencana tugas",
+    "progress": "Progres tugas",
+    "days_remaining": "Sisa hari menuju tenggat",
+    "importance": "Tingkat kepentingan",
+    "dependency_count": "Jumlah tugas prasyarat",
+    "unfinished_dependency_count": "Prasyarat belum selesai",
+    "assignee_workload": "Beban kerja penanggung jawab",
+    "team_size": "Ukuran tim",
+    "project_complexity": "Kompleksitas proyek",
+    "manager_experience": "Pengalaman manajer",
+    "historical_risk_score": "Riwayat skor risiko",
+    "budget_per_task": "Anggaran per tugas"
+  },
+  "feature_importances": [
+    0.0089872,
+    0.06316661,
+    0.15623032,
+    0.0552142,
+    0.00317496,
+    0.19008767,
+    0.35701868,
+    0.02194169,
+    0.07575018,
+    0.00588512,
+    0.02912936,
+    0.03341401
+  ],
+  "metrics": {
+    "accuracy": 0.912333,
+    "macro_f1": 0.908716
+  },
+  "dataset": {
+    "type": "synthetic",
+    "n_samples": 30000
+  },
+  "note": "Model berjalan langsung di browser (client-side); backend hanya menyimpan hasil."
+}

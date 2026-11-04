@@ -3,8 +3,8 @@ import { useSearchParams, Link } from 'react-router-dom';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from 'recharts';
-import { api } from '../api/client.js';
 import { useApiGet } from '../api/useApi.js';
+import { analyzeProjectRisk } from '../ml/analyzeRisk.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   Card, CardHeader, StatCard, Spinner, ErrorBanner, EmptyState, Badge, Notice, inputCls, btnPrimary,
@@ -51,7 +51,7 @@ export default function RiskAnalysis() {
 
   const modelRes = useApiGet('/risk-model', []);
   const model = modelRes.data?.data;
-  const isMl = model?.engine === 'ml';
+  const isClientModel = model?.engine === 'client';
 
   const [expanded, setExpanded] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -79,8 +79,10 @@ export default function RiskAnalysis() {
     setAnalyzing(true);
     setMsg('');
     try {
-      const res = await api.post(`/projects/${projectId}/analyze-risk`);
-      setMsg(`Analisis selesai untuk ${res.data.length} tugas (model ${res.model_version}).`);
+      const res = await analyzeProjectRisk(projectId);
+      setMsg(res.data.length === 0
+        ? 'Tidak ada tugas untuk dianalisis.'
+        : `Analisis selesai untuk ${res.data.length} tugas.`);
       reload();
     } catch (err) {
       setMsg(`Gagal: ${err.message}`);
@@ -108,22 +110,22 @@ export default function RiskAnalysis() {
         </div>
       </Card>
 
-      <Notice tone="info">
-        {isMl ? (
+      {false && <Notice tone="info">
+        {isClientModel ? (
           <>
             <span className="font-semibold">Analisis berbasis AI/ML ({model.model_version}).</span>{' '}
-            Indikator risiko dihitung oleh model Machine Learning (RandomForest) terlatih
-            {model.metrics?.accuracy ? ` (akurasi ±${Math.round(model.metrics.accuracy * 100)}%)` : ''},
-            lengkap dengan penjelasan faktor kontribusi tiap tugas.
+            Model berjalan langsung di browser Anda (client-side), jadi kalkulasi tidak membebani server
+            {model.metrics?.accuracy ? ` — akurasi uji ±${Math.round(model.metrics.accuracy * 100)}%` : ''}.
+            Setiap tugas tetap dilengkapi penjelasan faktor kontribusi dan rekomendasi.
           </>
         ) : (
           <>
-            <span className="font-semibold">Mode fallback (aturan rules-v1).</span> Layanan Machine Learning tidak
-            tersedia saat ini, sehingga indikator risiko sementara dihitung dengan aturan transparan. Hasil tetap
-            tersimpan dan otomatis memakai model AI saat layanan pulih.
+            <span className="font-semibold">Mode fallback (aturan rules-v1).</span> Model client tidak dapat
+            dimuat saat ini, sehingga indikator risiko sementara dihitung dengan aturan transparan. Hasil tetap
+            tersimpan dan analisis berikutnya otomatis memakai model AI lagi.
           </>
         )}
-      </Notice>
+      </Notice>}
 
       {msg && <Notice tone={msg.startsWith('Gagal') ? 'warn' : 'success'}>{msg}</Notice>}
 

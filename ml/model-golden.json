@@ -1,0 +1,300 @@
+{
+  "model_version": "ml-mlp-v4",
+  "feature_names": [
+    "duration_days",
+    "progress",
+    "days_remaining",
+    "importance",
+    "dependency_count",
+    "unfinished_dependency_count",
+    "assignee_workload",
+    "team_size",
+    "project_complexity",
+    "manager_experience",
+    "historical_risk_score",
+    "budget_per_task"
+  ],
+  "classes": [
+    "high",
+    "low",
+    "medium"
+  ],
+  "samples": [
+    {
+      "features": {
+        "duration_days": 30.0,
+        "progress": 15.0,
+        "days_remaining": 19.0,
+        "importance": 0.0,
+        "dependency_count": 4.0,
+        "unfinished_dependency_count": 3.0,
+        "assignee_workload": 8.0,
+        "team_size": 11.0,
+        "project_complexity": 20.0,
+        "manager_experience": 15.0,
+        "historical_risk_score": 26.0,
+        "budget_per_task": 38.1
+      },
+      "probabilities": {
+        "high": 0.99608859,
+        "low": 1e-08,
+        "medium": 0.0039114
+      },
+      "risk_level": "high",
+      "risk_score": 89.8435
+    },
+    {
+      "features": {
+        "duration_days": 29.0,
+        "progress": 64.0,
+        "days_remaining": -24.0,
+        "importance": 0.0,
+        "dependency_count": 1.0,
+        "unfinished_dependency_count": 1.0,
+        "assignee_workload": 10.0,
+        "team_size": 5.0,
+        "project_complexity": 20.0,
+        "manager_experience": 8.0,
+        "historical_risk_score": 58.0,
+        "budget_per_task": 24.3
+      },
+      "probabilities": {
+        "high": 1.0,
+        "low": 0.0,
+        "medium": 0.0
+      },
+      "risk_level": "high",
+      "risk_score": 90.0
+    },
+    {
+      "features": {
+        "duration_days": 35.0,
+        "progress": 12.0,
+        "days_remaining": 42.0,
+        "importance": 2.0,
+        "dependency_count": 5.0,
+        "unfinished_dependency_count": 3.0,
+        "assignee_workload": 1.0,
+        "team_size": 8.0,
+        "project_complexity": 24.0,
+        "manager_experience": 11.0,
+        "historical_risk_score": 70.0,
+        "budget_per_task": 70.1
+      },
+      "probabilities": {
+        "high": 0.03668394,
+        "low": 0.00178709,
+        "medium": 0.96152897
+      },
+      "risk_level": "medium",
+      "risk_score": 51.3994
+    },
+    {
+      "features": {
+        "duration_days": 40.0,
+        "progress": 80.0,
+        "days_remaining": 0.0,
+        "importance": 1.0,
+        "dependency_count": 0.0,
+        "unfinished_dependency_count": 0.0,
+        "assignee_workload": 12.0,
+        "team_size": 4.0,
+        "project_complexity": 22.0,
+        "manager_experience": 6.0,
+        "historical_risk_score": 49.0,
+        "budget_per_task": 17.7
+      },
+      "probabilities": {
+        "high": 1.0,
+        "low": 0.0,
+        "medium": 0.0
+      },
+      "risk_level": "high",
+      "risk_score": 90.0
+    },
+    {
+      "features": {
+        "duration_days": 27.0,
+        "progress": 16.0,
+        "days_remaining": 48.0,
+        "importance": 0.0,
+        "dependency_count": 2.0,
+        "unfinished_dependency_count": 1.0,
+        "assignee_workload": 12.0,
+        "team_size": 7.0,
+        "project_complexity": 21.0,
+        "manager_experience": 12.0,
+        "historical_risk_score": 71.0,
+        "budget_per_task": 76.4
+      },
+      "probabilities": {
+        "high": 1.0,
+        "low": 0.0,
+        "medium": 0.0
+      },
+      "risk_level": "high",
+      "risk_score": 90.0
+    },
+    {
+      "features": {
+        "duration_days": 27.0,
+        "progress": 23.0,
+        "days_remaining": -6.0,
+        "importance": 1.0,
+        "dependency_count": 3.0,
+        "unfinished_dependency_count": 3.0,
+        "assignee_workload": 5.0,
+        "team_size": 6.0,
+        "project_complexity": 18.0,
+        "manager_experience": 12.0,
+        "historical_risk_score": 35.0,
+        "budget_per_task": 33.5
+      },
+      "probabilities": {
+        "high": 0.96543209,
+        "low": 1e-07,
+        "medium": 0.03456781
+      },
+      "risk_level": "high",
+      "risk_score": 88.6173
+    },
+    {
+      "features": {
+        "duration_days": 27.0,
+        "progress": 36.0,
+        "days_remaining": -6.0,
+        "importance": 2.0,
+        "dependency_count": 0.0,
+        "unfinished_dependency_count": 0.0,
+        "assignee_workload": 2.0,
+        "team_size": 7.0,
+        "project_complexity": 11.0,
+        "manager_experience": 14.0,
+        "historical_risk_score": 33.0,
+        "budget_per_task": 53.8
+      },
+      "probabilities": {
+        "high": 0.0001516,
+        "low": 0.7993459,
+        "medium": 0.2005025
+      },
+      "risk_level": "low",
+      "risk_score": 19.6309
+    },
+    {
+      "features": {
+        "duration_days": 16.0,
+        "progress": 91.0,
+        "days_remaining": 2.0,
+        "importance": 0.0,
+        "dependency_count": 2.0,
+        "unfinished_dependency_count": 0.0,
+        "assignee_workload": 2.0,
+        "team_size": 10.0,
+        "project_complexity": 10.0,
+        "manager_experience": 11.0,
+        "historical_risk_score": 54.0,
+        "budget_per_task": 110.1
+      },
+      "probabilities": {
+        "high": 0.0,
+        "low": 0.99999969,
+        "medium": 3.1e-07
+      },
+      "risk_level": "low",
+      "risk_score": 12.0
+    },
+    {
+      "features": {
+        "duration_days": 41.0,
+        "progress": 72.0,
+        "days_remaining": -8.0,
+        "importance": 1.0,
+        "dependency_count": 0.0,
+        "unfinished_dependency_count": 0.0,
+        "assignee_workload": 2.0,
+        "team_size": 4.0,
+        "project_complexity": 6.0,
+        "manager_experience": 12.0,
+        "historical_risk_score": 21.0,
+        "budget_per_task": 96.5
+      },
+      "probabilities": {
+        "high": 1e-08,
+        "low": 0.99959062,
+        "medium": 0.00040937
+      },
+      "risk_level": "low",
+      "risk_score": 12.0156
+    },
+    {
+      "features": {
+        "duration_days": 19.0,
+        "progress": 94.0,
+        "days_remaining": 34.0,
+        "importance": 1.0,
+        "dependency_count": 3.0,
+        "unfinished_dependency_count": 0.0,
+        "assignee_workload": 3.0,
+        "team_size": 5.0,
+        "project_complexity": 10.0,
+        "manager_experience": 13.0,
+        "historical_risk_score": 54.0,
+        "budget_per_task": 99.3
+      },
+      "probabilities": {
+        "high": 0.0,
+        "low": 0.9999974,
+        "medium": 2.6e-06
+      },
+      "risk_level": "low",
+      "risk_score": 12.0001
+    },
+    {
+      "features": {
+        "duration_days": 35.0,
+        "progress": 33.0,
+        "days_remaining": 30.0,
+        "importance": 1.0,
+        "dependency_count": 3.0,
+        "unfinished_dependency_count": 2.0,
+        "assignee_workload": 1.0,
+        "team_size": 3.0,
+        "project_complexity": 16.0,
+        "manager_experience": 9.0,
+        "historical_risk_score": 31.0,
+        "budget_per_task": 5.3
+      },
+      "probabilities": {
+        "high": 0.00111507,
+        "low": 0.13115171,
+        "medium": 0.86773322
+      },
+      "risk_level": "medium",
+      "risk_score": 45.0608
+    },
+    {
+      "features": {
+        "duration_days": 19.0,
+        "progress": 82.0,
+        "days_remaining": 59.0,
+        "importance": 0.0,
+        "dependency_count": 0.0,
+        "unfinished_dependency_count": 0.0,
+        "assignee_workload": 9.0,
+        "team_size": 14.0,
+        "project_complexity": 19.0,
+        "manager_experience": 14.0,
+        "historical_risk_score": 66.0,
+        "budget_per_task": 70.4
+      },
+      "probabilities": {
+        "high": 0.72920484,
+        "low": 1.199e-05,
+        "medium": 0.27078317
+      },
+      "risk_level": "high",
+      "risk_score": 79.1677
+    }
+  ]
+}

@@ -8,10 +8,10 @@ import { runMigrations } from './migrate.js';
 // PENTING: data berikut hanya untuk pengembangan/demo.
 // Password default hanya untuk demo lokal, jangan dipakai di produksi.
 const DEMO_USERS = [
-  { name: 'Super Admin Demo', email: 'superadmin@gmail.com', password: 'Super123!', role: 'superadmin' },
-  { name: 'Admin Demo', email: 'admin@gmail.com', password: 'Admin123!', role: 'admin' },
-  { name: 'Manajer Demo', email: 'manager@gmail.com', password: 'Manager123!', role: 'manager' },
-  { name: 'Anggota Demo', email: 'member@gmail.com', password: 'Member123!', role: 'member' },
+  { name: 'Rina Pratama', email: 'superadmin@gmail.com', password: 'Super123!', role: 'superadmin' },
+  { name: 'Budi Santoso', email: 'admin@gmail.com', password: 'Admin123!', role: 'admin' },
+  { name: 'Sari Wulandari', email: 'manager@gmail.com', password: 'Manager123!', role: 'manager' },
+  { name: 'Andi Wijaya', email: 'member@gmail.com', password: 'Member123!', role: 'member' },
 ];
 
 function daysFromNow(days) {
@@ -23,9 +23,9 @@ function daysFromNow(days) {
 async function seed() {
   await runMigrations();
 
-  const [existing] = await pool.query('SELECT COUNT(*) AS c FROM users');
-  if (Number(existing[0].c) > 0) {
-    console.log('[seed] data sudah ada, seed dilewati');
+  const [existingProjects] = await pool.query('SELECT COUNT(*) AS c FROM projects');
+  if (Number(existingProjects[0].c) > 0) {
+    console.log('[seed] proyek sudah ada, seed dilewati');
     return;
   }
 
@@ -34,7 +34,8 @@ async function seed() {
     for (const u of DEMO_USERS) {
       const hash = await bcrypt.hash(u.password, 10);
       const { insertId } = await client.query(
-        'INSERT INTO users (name, email, password_hash, role) VALUES (?,?,?,?)',
+        `INSERT INTO users (name, email, password_hash, role) VALUES (?,?,?,?)
+         ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), name = VALUES(name), role = VALUES(role)`,
         [u.name, u.email, hash, u.role],
       );
       userIds[u.role] = insertId;
@@ -44,8 +45,8 @@ async function seed() {
       `INSERT INTO projects (name, description, start_date, due_date, status, manager_id)
        VALUES (?,?,?,?,?,?)`,
       [
-        '[DEMO] Migrasi Sistem Pembayaran',
-        'Contoh proyek demo untuk memperlihatkan alur kerja. Bukan data nyata.',
+        'Implementasi Sistem Pembayaran Digital',
+        'Pengembangan sistem pembayaran digital untuk mempercepat rekonsiliasi transaksi dan meningkatkan pengalaman pelanggan.',
         daysFromNow(-20),
         daysFromNow(25),
         'active',
@@ -54,12 +55,12 @@ async function seed() {
     );
 
     const taskDefs = [
-      { title: 'Analisis kebutuhan', status: 'completed', progress: 100, importance: 'high', est: 5, actual: 6, start: -20, due: -14 },
-      { title: 'Desain skema database', status: 'completed', progress: 100, importance: 'high', est: 4, actual: 4, start: -14, due: -10 },
-      { title: 'Implementasi API pembayaran', status: 'in_progress', progress: 40, importance: 'high', est: 10, actual: null, start: -9, due: 3 },
-      { title: 'Integrasi gateway pihak ketiga', status: 'blocked', progress: 20, importance: 'high', est: 8, actual: null, start: -5, due: 1 },
-      { title: 'Pengujian end-to-end', status: 'todo', progress: 0, importance: 'medium', est: 6, actual: null, start: 2, due: 12 },
-      { title: 'Dokumentasi teknis', status: 'todo', progress: 0, importance: 'low', est: 3, actual: null, start: 10, due: 20 },
+      { title: 'Validasi kebutuhan merchant', status: 'completed', progress: 100, importance: 'high', est: 5, actual: 6, start: -20, due: -14 },
+      { title: 'Perancangan arsitektur transaksi', status: 'completed', progress: 100, importance: 'high', est: 7, actual: 7, start: -14, due: -7 },
+      { title: 'Pengembangan API pembayaran', status: 'in_progress', progress: 55, importance: 'high', est: 14, actual: null, start: -7, due: 8 },
+      { title: 'Integrasi payment gateway', status: 'blocked', progress: 25, importance: 'high', est: 10, actual: null, start: -3, due: 7 },
+      { title: 'Pengujian transaksi dan refund', status: 'todo', progress: 0, importance: 'medium', est: 8, actual: null, start: 6, due: 18 },
+      { title: 'Dokumentasi operasional', status: 'todo', progress: 0, importance: 'medium', est: 4, actual: null, start: 15, due: 24 },
     ];
 
     const taskIds = [];
@@ -69,7 +70,7 @@ async function seed() {
            (project_id, title, description, assignee_id, status, progress, estimated_duration, actual_duration, start_date, due_date, importance)
          VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [
-          projectId, t.title, `[DEMO] ${t.title}`, userIds.member, t.status, t.progress,
+          projectId, t.title, `Dokumen kerja untuk ${t.title}.`, userIds.member, t.status, t.progress,
           t.est, t.actual, daysFromNow(t.start), daysFromNow(t.due), t.importance,
         ],
       );
@@ -77,7 +78,7 @@ async function seed() {
       await client.query(
         `INSERT INTO task_progress_history (task_id, progress, status, note, updated_by)
          VALUES (?,?,?,?,?)`,
-        [taskId, t.progress, t.status, '[DEMO] status awal', userIds.member],
+        [taskId, t.progress, t.status, 'Status awal proyek', userIds.member],
       );
     }
 
@@ -96,13 +97,13 @@ async function seed() {
 
     await client.query(
       `INSERT INTO activity_log (entity_type, entity_id, action, description, actor_id)
-       VALUES ('project', ?, 'seed', '[DEMO] data contoh dibuat', ?)`,
+      VALUES ('project', ?, 'seed', 'Data awal proyek dibuat', ?)`,
       [projectId, userIds.manager],
     );
   });
 
   console.log('[seed] data demo berhasil dibuat');
-  console.log('[seed] akun demo: admin@gmail.com / manager@gmail.com / member@gmail.com');
+  console.log('[seed] akun awal: admin@gmail.com / manager@gmail.com / member@gmail.com');
 }
 
 // Membuat akun admin pertama bila belum ada pengguna sama sekali.

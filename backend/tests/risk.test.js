@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { computeTaskRisk, RISK_MODEL_VERSION } from '../src/services/risk.js';
+import { computeTaskRisk, normalizePredictions, RISK_MODEL_VERSION } from '../src/services/risk.js';
 
 const now = new Date('2026-01-15T00:00:00Z');
 const day = (offset) => {
@@ -61,4 +61,33 @@ test('tugas tanpa tenggat tidak menghasilkan delay', () => {
     { now },
   );
   expect(r.predicted_delay_days).toBeNull();
+});
+
+test('prediksi client dihitung ulang dari probabilitas, bukan nilai kiriman', () => {
+  const result = normalizePredictions(
+    [{
+      task_id: 7,
+      risk_level: 'low',
+      probabilities: { low: 0.2, medium: 0.3, high: 0.5 },
+      drivers: [{ feature: 'days_remaining', value: -2, contribution: 20, direction: 'up' }],
+    }],
+    [{ id: 7 }],
+  );
+  const prediction = result.get(7);
+  expect(prediction.risk_level).toBe('high');
+  expect(Math.abs(prediction.risk_score - 62.4)).toBeLessThan(0.01);
+  expect(prediction.confidence).toBe(0.5);
+  expect(prediction.drivers[0].label).toBe('Sisa hari menuju tenggat');
+});
+
+test('prediksi untuk tugas di luar proyek diabaikan', () => {
+  const result = normalizePredictions(
+    [{ task_id: 99, probabilities: { low: 0, medium: 0, high: 1 } }],
+    [{ id: 7 }],
+  );
+  expect(result.size).toBe(0);
+});
+
+test('predictions bukan array ditolak', () => {
+  expect(() => normalizePredictions({}, [])).toThrow();
 });

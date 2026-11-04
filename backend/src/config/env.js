@@ -23,8 +23,6 @@ export const config = {
     database: process.env.DB_NAME || 'project_ai',
   },
   corsOrigin: process.env.CORS_ORIGIN || '*',
-  // Layanan Machine Learning (FastAPI) untuk prediksi risiko v2.
-  mlServiceUrl: process.env.ML_SERVICE_URL || 'http://localhost:8000',
   // Data demo kini NONAKTIF secara bawaan agar aplikasi dipakai dengan data nyata.
   seedDemo: (process.env.SEED_DEMO || 'false').toLowerCase() === 'true',
   // Akun admin pertama dibuat otomatis bila belum ada pengguna sama sekali.

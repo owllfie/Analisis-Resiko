@@ -5,7 +5,7 @@ import { AuthBrand, BrandMark, Field, inputCls, btnPrimary, IconShield } from '.
 
 const FEATURES = [
   'Manajemen proyek dan tugas dengan ketergantungan antar-tugas',
-  'Analisis risiko berbasis AI/ML (RandomForest, scikit-learn)',
+  'Analisis risiko berbasis AI/ML yang berjalan langsung di browser',
   'Penentuan prioritas pekerjaan otomatis dengan alasan',
   'Pemantauan progres dan riwayat aktivitas',
 ];
@@ -40,7 +40,7 @@ export default function Login() {
       <AuthBrand
         lead="Kelola proyek, pantau risiko, dan prioritaskan pekerjaan dengan bantuan analisis otomatis."
         features={FEATURES}
-        note="Indikator risiko dihitung dengan model Machine Learning (RandomForest) melalui layanan AI, dengan fallback aturan bila layanan tidak tersedia."
+        note="Indikator risiko dihitung oleh model Machine Learning yang berjalan langsung di browser Anda, dengan fallback aturan bila model tidak dapat dimuat."
       />
 
       <div className="flex-1 flex items-center justify-center p-6 sm:p-10">

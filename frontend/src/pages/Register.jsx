@@ -5,7 +5,7 @@ import { AuthBrand, BrandMark, Field, inputCls, btnPrimary, IconShield } from '.
 
 const FEATURES = [
   'Buat akun dan mulai kelola proyek Anda',
-  'Analisis risiko berbasis AI/ML (scikit-learn)',
+  'Analisis risiko berbasis AI/ML yang berjalan di browser',
   'Penentuan prioritas pekerjaan otomatis dengan alasan',
   'Pemantauan progres dan riwayat aktivitas',
 ];

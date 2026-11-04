@@ -1,5 +1,16 @@
-node_modules
-npm-debug.log
+node_modules/
+tests/
+coverage/
+*.log
+.git/
 .env
-.git
-tests
+.env.*
+!.env.example
+
+# Jangan bawa artefak training / Python ke image backend.
+**/*.py
+**/*.pkl
+**/*.csv
+**/__pycache__/
+**/*.pyc
+ml/

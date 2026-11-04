@@ -23,4 +23,4 @@ Features:
 
 The trainer currently requires at least 200 complete rows. Include examples from all three outcome categories. More representative, correctly labeled history is needed for dependable evaluation. Keep related snapshots from the same project together when judging results; randomly splitting individual snapshots can make evaluation look better than performance on new projects.
 
-After preparing the data, place it beside `train_model.py` as `historical_tasks.csv` and retrain the ML service image. The trainer records whether the model used historical or synthetic data in `model_meta.json`.
+After preparing the data, place it beside these scripts as `historical_tasks.csv` and run `python export_client_model.py`. The exporter records whether the model used historical or synthetic data in `modelInfo.json` and in the client model metadata. Commit the generated `frontend/public/models/risk-model.json` and `backend/src/services/modelInfo.json`; do not deploy the CSV or Python code.
